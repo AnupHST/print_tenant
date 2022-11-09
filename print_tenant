@@ -1,0 +1,35 @@
+db_list=$(mysql -u root -e "SHOW DATABASES LIKE 'tenant%';"  | grep -o 'tenant_[^\s]\+' )
+
+# echo $db_list
+
+
+while IFS="  " read -r dbname
+do
+    
+   sys_name=$(mysql -u root -e "USE $dbname; SELECT * from config WHERE category = 'system' and name ='name'; " \
+           | sed -n -e 's/system\s\+name\s\+\(\S\+\)/\1/p' )
+
+   # here database name  $dbname inside $sys_name il valore (p.es. "tenant_1_company")
+   # so stdout to the console
+
+   echo  "$dbname": "$sys_name"
+
+done <<< "$db_list"
+
+# suggest empty tenant
+
+nsugg=''
+for n in {1..10}
+do
+   if ! echo "$db_list" | tr ' ' '\n' | grep -q -x tenant_$n ; then
+      n_sugg=$n
+      break
+   fi
+done
+
+if [ -z "$n_sugg" ]; then
+   echo "Sorry: no space for new tenant"
+else
+   echo "Suggested new tenant: tenant_$n_sugg"
+fi
+
